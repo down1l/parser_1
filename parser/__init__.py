@@ -1,3 +1,1 @@
-from .config import *
-
-from .methods import *
+from .methods import makeProductsQueue
