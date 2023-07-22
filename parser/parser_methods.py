@@ -1,9 +1,14 @@
 import requests
+from httpx import AsyncClient, Response  # Response - для аннотации
 from bs4 import BeautifulSoup as soup
 
 
+import os
+from textwrap import TextWrapper as tw
 from typing import Union
 import re
+import json
+
 
 from .config import URL, PAGES_RE, PRODUCTS_RE
 
@@ -80,3 +85,52 @@ def makeProductsQueue():
                 result = re.search(PRODUCTS_RE, str(product)).group(1)
                 products_queue.append(f"{URL}{result[1:]}")
     return products_queue
+
+
+async def parseProductPage(url: str) -> str:
+    async with AsyncClient() as client:
+        response = await client.get(url)
+    result = parseProductPrise(response)
+    return result
+
+
+def parseProductPrise(response: Response) -> Union[str, int]:
+
+    description_txt = ""
+    product_json = {}
+    parser = soup(response.text, "html.parser")
+
+    price = parser.find("span", itemprop="price").text
+    name = parser.find("h1", class_="h1 h1--card-page d-none d-lg-block").text
+    id = str(response.url).split("\\")[-1]
+    try:
+        size = parser.find("div", class_="card-product-type-item__val").text
+    except AttributeError:
+        pass
+
+    description = parser.find(
+        "div", class_="tab-pane fade show active").children
+    for par in description:
+        if "Нужна консультация? Звоните!" not in par.text:
+            description_txt += par.text
+        else:
+            break
+    description_txt = " ".join(tw(width=60).wrap(text=description_txt))
+
+    product_json["id"] = int(re.search(r"\d+", id).group(0))
+    product_json["имя"] = name
+    product_json["цена"] = int(re.search(r"\d+", price).group(0))
+
+    if size:
+        product_json["размер"] = size
+
+    if product_json["цена"] == 0:
+        product_json["наличие"] = "нет в наличии"
+    else:
+        product_json["наличие"] = "в наличии"
+
+    product_json["url"] = str(response.url)
+    product_json["описание"] = re.sub(r"\s+", " ", description_txt)
+
+    value = json.dumps(product_json, ensure_ascii=False, indent=1)
+    return value

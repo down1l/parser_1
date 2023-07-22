@@ -1,1 +1,1 @@
-from .methods import makeProductsQueue
+from .parser_methods import makeProductsQueue, parseProductPage

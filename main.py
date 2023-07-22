@@ -1,15 +1,18 @@
 from time import sleep
-import re
 import json
+import asyncio
 
 
-from parser import makeProductsQueue
+from parser import makeProductsQueue, parseProductPage
 
 
-def main():
+async def main():
     queue = makeProductsQueue()
-    print(len(queue))
+
+    for link in queue:
+        result = await parseProductPage(link)
+        print(result)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
