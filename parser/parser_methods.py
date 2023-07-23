@@ -107,6 +107,8 @@ def parseProductPrise(response: Response) -> Union[str, int]:
         size = parser.find("div", class_="card-product-type-item__val").text
     except AttributeError:
         pass
+    
+    img_url = parser.find("img", class_="eslider-main-img hitem").get("src")
 
     description = parser.find(
         "div", class_="tab-pane fade show active").children
@@ -129,8 +131,8 @@ def parseProductPrise(response: Response) -> Union[str, int]:
     else:
         product_json["наличие"] = "в наличии"
 
-    product_json["url"] = str(response.url)
+    product_json["картинка"] = URL + img_url[1:]
+    product_json["ссылка"] = str(response.url)
     product_json["описание"] = re.sub(r"\s+", " ", description_txt)
 
-    value = json.dumps(product_json, ensure_ascii=False, indent=1)
-    return value
+    return product_json
